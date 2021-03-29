@@ -1,0 +1,45 @@
+curl -L -X GET 'http://127.0.0.1:9389/backend/tenant/conf/getPageV2?pageTag=detail' \
+-H 'editingtenant: bytedance' \
+-H 'Host: .bytedance.net' \
+-H 'cookie: login_token=78261900-a6e2-4edd-8e74-e27d8bc9e8bb; tt_webid=6833969866845242887; __tea_sdk__user_unique_id=10_6111206; __tea_sdk__ssid=ce02a3f6-4e39-4f07-9cec-70abaad48aef; lang=zh; region=CHN; _ssa_userphone=; lang_region=CN; SLARDAR_WEB_ID=6111206; _ga=GA1.2.1114712873.1591615904' \
+-H 'Tt-Agw-Loader-Session-UserId: 6111206' \
+-H 'Tt-Agw-Client-Ip: 172.16.0.1' \
+-H 'recordtype: record_opportunity_au' \
+-H 'pagesession: {"pipelineId":"8"}' -o /dev/null -s -w '@curl-format.txt'
+
+
+
+ 压力测试
+
+curl -L -X GET 'http://127.0.0.1:9449/backend/tenant/conf/getPageV2?pageTag=detail' -H 'editingtenant: bytedance' -H 'Host: .bytedance.net' -H 'cookie: login_token=78261900-a6e2-4edd-8e74-e27d8bc9e8bb; tt_webid=6833969866845242887; __tea_sdk__user_unique_id=10_6111206; __tea_sdk__ssid=ce02a3f6-4e39-4f07-9cec-70abaad48aef; lang=zh; region=CHN; _ssa_userphone=; lang_region=CN; SLARDAR_WEB_ID=6111206; _ga=GA1.2.1114712873.1591615904' -H 'Tt-Agw-Loader-Session-UserId: 6111206' -H 'Tt-Agw-Client-Ip: 172.16.0.1' -H 'recordtype: record_lead_au' -H 'pagesession: {"pipelineId":"8"}'  -o /dev/null -s -w '@curl-format.txt'
+
+
+
+curl -L -X GET 'http://localhost:9449/backend/tenant/conf/getPageV2?pageTag=detail' \
+-H 'editingtenant: bytedance' \
+-H 'Host: .bytedance.net' \
+-H 'cookie: login_token=78261900-a6e2-4edd-8e74-e27d8bc9e8bb; tt_webid=6833969866845242887; __tea_sdk__user_unique_id=10_6111206; __tea_sdk__ssid=ce02a3f6-4e39-4f07-9cec-70abaad48aef; lang=zh; region=CHN; _ssa_userphone=; lang_region=CN; SLARDAR_WEB_ID=6111206; _ga=GA1.2.1114712873.1591615904' \
+-H 'Tt-Agw-Loader-Session-UserId: 6111206' \
+-H 'Tt-Agw-Client-Ip: 10.145.49.140' \
+-H 'recordtype: record_lead_au' \
+-H 'pagesession: {}' -o /dev/null -s -w '@curl-format.txt'
+
+
+
+
+curl -L -X GET 'www.baidu.com'
+
+
+while true; do 《cmd》; sleep 1; done
+
+
+
+seq 10 | xargs -I {} curl -L -X GET 'www.baidu.com'
+
+grep "getpagev2" application.log |awk -F" " '{print $16}'|awk -F"/" '$2>2000'
+
+ grep '14:5[0-9]:' hello | awk '{print $7}'|sort|uniq -c|sort -n -r
+
+grep 'cost=' application.log | awk '{print $15}'|sort|uniq -c|sort -n -r
+
+sudo chown -R $(whoami) usr/local
