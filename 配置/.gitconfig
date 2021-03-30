@@ -1,0 +1,21 @@
+[user]
+	name = chenqixin
+	email = chenqixin@bytedance.com
+[alias]
+	st = status
+	co = checkout
+	ci = commit
+	br = branch
+  last = log -1
+  re = reset --hard
+[core]
+	excludesfile = /Users/bytedance/.gitignore_global
+	quotepath = false
+[difftool "sourcetree"]
+	cmd = opendiff \"$LOCAL\" \"$REMOTE\"
+	path =
+[mergetool "sourcetree"]
+	cmd = /Applications/Sourcetree.app/Contents/Resources/opendiff-w.sh \"$LOCAL\" \"$REMOTE\" -ancestor \"$BASE\" -merge \"$MERGED\"
+	trustExitCode = true
+[commit]
+	template = /Users/bytedance/.stCommitMsg
