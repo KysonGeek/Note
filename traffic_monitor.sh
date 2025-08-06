@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Parameter order: LIMIT_GB, reset_day, CHECK_TYPE, INTERFACE
-
+date "+%Y-%m-%d %H:%M:%S"
 LIMIT_GB=${1:-1024}
 
 reset_day=${2:-1}
