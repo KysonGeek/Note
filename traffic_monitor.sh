@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Parameter order: LIMIT_GB, reset_day, CHECK_TYPE, INTERFACE
+# (crontab -l ; echo "* * * * * /root/traffic_monitor.sh 190 1 3 > /root/info.log 2>&1")  | crontab -
 date "+%Y-%m-%d %H:%M:%S"
 LIMIT_GB=${1:-1024}
 
