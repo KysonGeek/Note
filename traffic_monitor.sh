@@ -1,7 +1,7 @@
 #!/bin/bash
+# (crontab -l ; echo "* * * * * /root/traffic_monitor.sh 190 1 3 > /root/info.log 2>&1")  | crontab -
 
 # Parameter order: LIMIT_GB, reset_day, CHECK_TYPE, INTERFACE
-# (crontab -l ; echo "* * * * * /root/traffic_monitor.sh 190 1 3 > /root/info.log 2>&1")  | crontab -
 date "+%Y-%m-%d %H:%M:%S"
 LIMIT_GB=${1:-1024}
 
@@ -11,9 +11,17 @@ CHECK_TYPE=${3:-4}
 
 INTERFACE=${4:-$(ip route | grep default | awk '{print $5}')}
 
-LIMIT=$(echo "$LIMIT_GB * 1024" | bc)
-
-echo "流量限制：$LIMIT MiB"
+LIMIT=$(echo "$LIMIT_GB" | bc)
+# Telegram Bot 设置
+TELEGRAM_BOT_TOKEN="7707500009:AAGOF_wWbaP5TL0dw2DUCiYKvaIfrjin3lM"
+TELEGRAM_CHAT_ID="5469383389"
+send_telegram_message() {
+  local message="$1"
+  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+       -d "chat_id=${TELEGRAM_CHAT_ID}" \
+       -d "text=${message}" > /dev/null
+}
+echo "流量限制：$LIMIT GiB"
 
 echo "流量将在每月的第 $reset_day 天重置"
 
@@ -28,7 +36,7 @@ if [ "$current_day" -eq "$reset_day" ] || ([ "$reset_day" -gt "$last_day_of_mont
     touch /tmp/vnstat_reset
 
     rm /var/lib/vnstat/*
-
+    rm -f "*_FLAG"
     sudo systemctl restart vnstat
 
     echo "流量已经重置，下次重置将在下个月的第 $reset_day 天"
@@ -77,9 +85,9 @@ DATA=$(vnstat -i $INTERFACE --oneline)
 
 CURRENT_DATE=$(echo $DATA | cut -d ';' -f 8)
 
-TRAFFIC_RX=$(echo $DATA | cut -d ';' -f 13 | tr -d ' ' | sed 's/MiB//;s/GiB/*1024/;s/KiB/\/1024/' | bc)
+TRAFFIC_RX=$(echo $DATA | cut -d ';' -f 13 | tr -d ' ' | sed 's/MiB/\/1024/;s/GiB//;s/KiB/\/1024\/1024/' | bc)
 
-TRAFFIC_TX=$(echo $DATA | cut -d ';' -f 14 | tr -d ' ' | sed 's/MiB//;s/GiB/*1024/;s/KiB/\/1024/' | bc)
+TRAFFIC_TX=$(echo $DATA | cut -d ';' -f 14 | tr -d ' ' | sed 's/MiB/\/1024/;s/GiB//;s/KiB/\/1024\/1024/' | bc)
 
 echo "当前月份：$CURRENT_DATE"
 
@@ -87,7 +95,7 @@ if [ "$CHECK_TYPE" = "1" ]; then
 
   TRAFFIC_TO_CHECK=$TRAFFIC_TX
 
-  echo "只检查上传流量。当前上传流量为：$TRAFFIC_TX MiB。"
+  echo "只检查上传流量。当前上传流量为：$TRAFFIC_TX GiB。"
 
   echo "当前对比项是：上传流量。"
 
@@ -95,8 +103,7 @@ elif [ "$CHECK_TYPE" = "2" ]; then
 
   TRAFFIC_TO_CHECK=$TRAFFIC_RX
 
-  echo "只检查下载流量。当前下载流量为：$TRAFFIC_RX MiB。"
-
+  echo "只检查下载流量。当前下载流量为：$TRAFFIC_RX GiB。"
   echo "当前对比项是：下载流量。"
 
 elif [ "$CHECK_TYPE" = "3" ]; then
@@ -105,13 +112,13 @@ elif [ "$CHECK_TYPE" = "3" ]; then
 
   if [ "$TRAFFIC_TO_CHECK" = "$TRAFFIC_TX" ]; then
 
-    echo "当前上传流量为：$TRAFFIC_TX MiB，下载流量为：$TRAFFIC_RX MiB。"
+    echo "当前上传流量为：$TRAFFIC_TX GiB，下载流量为：$TRAFFIC_RX GiB。"
 
     echo "作为比较的流量是：上传流量。"
 
   else
 
-    echo "当前上传流量为：$TRAFFIC_TX MiB，下载流量为：$TRAFFIC_RX MiB。"
+    echo "当前上传流量为：$TRAFFIC_TX GiB，下载流量为：$TRAFFIC_RX GiB。"
 
     echo "作为比较的流量是：下载流量。"
 
@@ -121,9 +128,9 @@ elif [ "$CHECK_TYPE" = "4" ]; then
 
   TRAFFIC_TO_CHECK=$(echo "$TRAFFIC_TX + $TRAFFIC_RX" | bc)
 
-  echo "检查上传和下载流量的总和。当前上传流量为：$TRAFFIC_TX MiB，下载流量为：$TRAFFIC_RX MiB。"
+  echo "检查上传和下载流量的总和。当前上传流量为：$TRAFFIC_TX GiB，下载流量为：$TRAFFIC_RX GiB。"
 
-  echo "作为比较的流量是：上传和下载流量的总和（$TRAFFIC_TO_CHECK MiB）。"
+  echo "作为比较的流量是：上传和下载流量的总和（$TRAFFIC_TO_CHECK GiB）。"
 
 else
 
@@ -132,7 +139,20 @@ else
   exit 1
 
 fi
-
+# 设置精度为 2，计算 LIMIT * 0.3
+threshold=$(echo "($LIMIT * 0.3)" | bc -l)
+echo $threshold
+# 比较 TRAFFIC_TO_CHECK 是否大于 threshold
+exceeded=$(echo "$TRAFFIC_TO_CHECK / $threshold" | bc)
+echo $exceeded
+if [ $exceeded -gt 0 ]; then
+    flag_file="${exceeded}_FLAG"
+    if [ ! -f "$flag_file" ]; then
+        percent=$(echo "scale=0; $TRAFFIC_TO_CHECK * 100 / $LIMIT" | bc)
+        send_telegram_message "流量已使用 ${TRAFFIC_TO_CHECK} GiB（${percent}%）"
+        touch "$flag_file"
+    fi
+fi
 if (( $(echo "$TRAFFIC_TO_CHECK > $LIMIT" | bc -l) )); then
 
   iptables -F
